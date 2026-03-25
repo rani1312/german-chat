@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>German AI Chat </title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h2>German AI Chat </h2>
+
+<input id="username" placeholder="Enter your name">
+<button onclick="joinChat()">Join</button>
+
+<div id="chat-container" style="display:none;">
+
+    <div id="users"></div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+        <input id="msg" placeholder="Type message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+
+<script>
+    var socket = io();
+    var username = "";
+
+    function joinChat(){
+        username = document.getElementById("username").value;
+
+        if(username.trim() !== ""){
+            socket.emit('join', username);
+            document.getElementById("chat-container").style.display = "block";
+        }
+    }
+
+    // ONLINE USERS
+    socket.on('user_list', function(users){
+        document.getElementById("users").innerHTML =
+            "🟢 Online: " + users.join(", ");
+    });
+
+    // RECEIVE MESSAGE
+    socket.on('message', function(data){
+
+        let div = document.createElement("div");
+
+        div.classList.add("msg");
+
+        if(data.username === username){
+            div.classList.add("right");
+        } else {
+            div.classList.add("left");
+        }
+
+        div.innerHTML = `
+            <b>${data.username}</b><br>
+            ${data.original}<br>
+            🇩🇪 ${data.german}<br>
+            ✨ <i>${data.improved}</i>
+        `;
+
+        document.getElementById("messages").appendChild(div);
+
+        document.getElementById("messages").scrollTop =
+            document.getElementById("messages").scrollHeight;
+    });
+
+    // SEND MESSAGE
+    function sendMessage(){
+        let msg = document.getElementById("msg").value;
+
+        if(msg.trim() !== ""){
+            socket.emit('message', {
+                username: username,
+                message: msg
+            });
+
+            document.getElementById("msg").value = "";
+        }
+    }
+
+    // ENTER KEY SUPPORT
+    document.getElementById("msg").addEventListener("keypress", function(e){
+        if(e.key === "Enter"){
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
